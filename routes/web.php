@@ -18,4 +18,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('single-product', [IpaymuController::class, 'singleProduct']);
+Route::get('direct-payment', [IpaymuController::class, 'directPayment']);
+Route::get('redirect-payment', [IpaymuController::class, 'redirectPayment']);
