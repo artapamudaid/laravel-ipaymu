@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 
 class IpaymuController extends Controller
@@ -89,11 +90,24 @@ class IpaymuController extends Controller
         if ($err) {
             echo $err;
         } else {
-
             //Response
             $data = json_decode($ret);
             if ($data->Status == 200) {
-                var_dump($data);
+
+                $trx = [
+                    'trxId' => $data->Data->TransactionId,
+                    'referenceId' => $data->Data->ReferenceId,
+                    'via' => $data->Data->Via,
+                    'channel' => $data->Data->Channel,
+                    'va' => $data->Data->PaymentNo,
+                    'nominal' => $data->Data->TransactionId,
+                    'admin_fee' => $data->Data->Total,
+                    'expired' => $data->Data->Expired,
+                    'status' => 'pending',
+                    'is_paid' => 0,
+                ];
+
+                Transaction::insert($trx);
             } else {
                 echo $ret;
             }
@@ -119,6 +133,168 @@ class IpaymuController extends Controller
         $body['returnUrl']  = 'https://ipaymu.com/return';
         $body['notifyUrl']  = 'https://ipaymu.com/notify';
         $body['cancelUrl']  = 'https://ipaymu.com/cancel';
+
+        $jsonBody     = json_encode($body, JSON_UNESCAPED_SLASHES);
+        $requestBody  = strtolower(hash('sha256', $jsonBody));
+        $stringToSign = strtoupper($method) . ':' . $va . ':' . $requestBody . ':' . $secret;
+        $signature    = hash_hmac('sha256', $stringToSign, $secret);
+        $timestamp    = Date('YmdHis');
+
+        $ch = curl_init($url);
+
+        $headers = array(
+            'Accept: application/json',
+            'Content-Type: application/json',
+            'va: ' . $va,
+            'signature: ' . $signature,
+            'timestamp: ' . $timestamp
+        );
+
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        curl_setopt($ch, CURLOPT_POST, count($body));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonBody);
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $err = curl_error($ch);
+        $ret = curl_exec($ch);
+        curl_close($ch);
+        if ($err) {
+            echo $err;
+        } else {
+
+            //Response
+            $data = json_decode($ret);
+            if ($data->Status == 200) {
+                var_dump($data);
+            } else {
+                echo $ret;
+            }
+            //End Response
+        }
+    }
+
+    public function statusPayment($trxId)
+    {
+        $va           = '0000003851378225'; //get on iPaymu dashboard
+        $secret       = 'SANDBOXE38739E0-C35F-4E62-AA36-DF18A2DD9356-20220509140520'; //get on iPaymu dashboard
+
+
+        $url          = 'https://sandbox.ipaymu.com/api/v2/transaction'; //url
+        $method       = 'POST'; //method
+
+        $body['transactionId']  = $trxId;
+
+        $jsonBody     = json_encode($body, JSON_UNESCAPED_SLASHES);
+        $requestBody  = strtolower(hash('sha256', $jsonBody));
+        $stringToSign = strtoupper($method) . ':' . $va . ':' . $requestBody . ':' . $secret;
+        $signature    = hash_hmac('sha256', $stringToSign, $secret);
+        $timestamp    = Date('YmdHis');
+
+        $ch = curl_init($url);
+
+        $headers = array(
+            'Accept: application/json',
+            'Content-Type: application/json',
+            'va: ' . $va,
+            'signature: ' . $signature,
+            'timestamp: ' . $timestamp
+        );
+
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        curl_setopt($ch, CURLOPT_POST, count($body));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonBody);
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $err = curl_error($ch);
+        $ret = curl_exec($ch);
+        curl_close($ch);
+        if ($err) {
+            echo $err;
+        } else {
+
+            //Response
+            $data = json_decode($ret);
+            if ($data->Status == 200) {
+                var_dump($data);
+            } else {
+                echo $ret;
+            }
+            //End Response
+        }
+    }
+
+    public function checkSaldo()
+    {
+        $va           = '0000003851378225'; //get on iPaymu dashboard
+        $secret       = 'SANDBOXE38739E0-C35F-4E62-AA36-DF18A2DD9356-20220509140520'; //get on iPaymu dashboard
+
+
+        $url          = 'https://sandbox.ipaymu.com/api/v2/balance'; //url
+        $method       = 'POST'; //method
+
+        $body['account']  = $va;
+
+        $jsonBody     = json_encode($body, JSON_UNESCAPED_SLASHES);
+        $requestBody  = strtolower(hash('sha256', $jsonBody));
+        $stringToSign = strtoupper($method) . ':' . $va . ':' . $requestBody . ':' . $secret;
+        $signature    = hash_hmac('sha256', $stringToSign, $secret);
+        $timestamp    = Date('YmdHis');
+
+        $ch = curl_init($url);
+
+        $headers = array(
+            'Accept: application/json',
+            'Content-Type: application/json',
+            'va: ' . $va,
+            'signature: ' . $signature,
+            'timestamp: ' . $timestamp
+        );
+
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        curl_setopt($ch, CURLOPT_POST, count($body));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonBody);
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $err = curl_error($ch);
+        $ret = curl_exec($ch);
+        curl_close($ch);
+        if ($err) {
+            echo $err;
+        } else {
+
+            //Response
+            $data = json_decode($ret);
+            if ($data->Status == 200) {
+                var_dump($data);
+            } else {
+                echo $ret;
+            }
+            //End Response
+        }
+    }
+
+    public function trxHistory()
+    {
+        $va           = '0000003851378225'; //get on iPaymu dashboard
+        $secret       = 'SANDBOXE38739E0-C35F-4E62-AA36-DF18A2DD9356-20220509140520'; //get on iPaymu dashboard
+
+
+        $url          = 'https://sandbox.ipaymu.com/api/v2/history'; //url
+        $method       = 'POST'; //method
+
+        $body['account']  = $va;
 
         $jsonBody     = json_encode($body, JSON_UNESCAPED_SLASHES);
         $requestBody  = strtolower(hash('sha256', $jsonBody));

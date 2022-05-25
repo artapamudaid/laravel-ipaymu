@@ -20,3 +20,6 @@ Route::get('/', function () {
 
 Route::get('direct-payment', [IpaymuController::class, 'directPayment']);
 Route::get('redirect-payment', [IpaymuController::class, 'redirectPayment']);
+Route::get('status-payment/{trxId}', [IpaymuController::class, 'statusPayment']);
+Route::get('balance', [IpaymuController::class, 'checkSaldo']);
+Route::get('history', [IpaymuController::class, 'trxHistory']);
